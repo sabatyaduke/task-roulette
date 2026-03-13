@@ -44,17 +44,30 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .container { width: 100%; max-width: 500px; text-align: center; position: relative; padding-top: 10px; }
+        .container { width: 100%; max-width: 500px; text-align: center; position: relative; }
+
+        /* ヘッダーエリアの重なり防止策 */
+        .header-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+            padding-top: 10px;
+        }
 
         h1 { 
             font-size: 1.8rem; letter-spacing: 5px; color: var(--sub); 
             text-shadow: 0 0 15px var(--sub); 
-            margin-bottom: 20px; text-transform: uppercase; transition: 0.4s;
+            margin: 0; text-transform: uppercase; transition: 0.4s;
+            /* アイコンと被らないよう左右にマージンを確保 */
+            padding: 0 45px;
         }
         body.light-mode h1 { text-shadow: none; color: #005bb7; }
 
         .settings-btn {
-            position: absolute; top: 0; right: 0;
+            position: absolute; right: 0;
             background: rgba(0, 242, 255, 0.1); border: 1px solid var(--sub); border-radius: 50%;
             width: 44px; height: 44px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; color: var(--sub); transition: 0.3s;
@@ -67,7 +80,6 @@
         .time-settings { padding: 15px; margin-bottom: 20px; }
         .time-settings h2 { font-size: 1rem; margin-top: 0; color: var(--sub); }
         
-        /* 9つのボタンをきれいに並べるグリッド */
         .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         .time-btn { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); padding: 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
         .time-btn.active { background: rgba(0, 242, 255, 0.2); color: var(--sub); border-color: var(--sub); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
@@ -143,12 +155,13 @@
 <body>
 
 <div class="container">
-    <button class="settings-btn" onclick="openModal('settings-modal')">
-        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-    </button>
+    <div class="header-area">
+        <h1>Task Roulette</h1>
+        <button class="settings-btn" onclick="openModal('settings-modal')">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+    </div>
     
-    <h1>Task Roulette</h1>
-
     <div class="time-settings">
         <h2>⏱ 実行する時間を設定</h2>
         <div class="preset-grid">
@@ -280,7 +293,8 @@
     function openModal(id) { document.getElementById(id).style.display = 'flex'; renderHistory(); }
     function closeModal(e, id) { if(e.target.id === id) document.getElementById(id).style.display = 'none'; }
 
-    let tasks = JSON.parse(localStorage.getItem('myGachaTasks')) || ["読書する", "歩く", "運動する", "勉強する", "仕事する", "ゲームする", "掃除する", "給水する"];
+    /* デフォルトから「給水する」を削除 */
+    let tasks = JSON.parse(localStorage.getItem('myGachaTasks')) || ["読書する", "歩く", "運動する", "勉強する", "仕事する", "ゲームする", "掃除する"];
     function updateListDisplay() {
         document.getElementById('task-list-display').innerHTML = tasks.map((t, i) => `<div class="task-item"><span>${t}</span><span class="delete-btn" onclick="deleteTask(${i})">×</span></div>`).join('');
         localStorage.setItem('myGachaTasks', JSON.stringify(tasks));
@@ -290,7 +304,7 @@
         if (val) { tasks.push(val); document.getElementById('new-task').value = ''; updateListDisplay(); }
     }
     function deleteTask(i) { tasks.splice(i, 1); updateListDisplay(); }
-    function resetDefault() { if(confirm("初期化しますか？")) { tasks = ["読書する", "歩く", "運動する", "勉強する", "仕事する", "ゲームする", "掃除する", "給水する"]; updateListDisplay(); } }
+    function resetDefault() { if(confirm("初期化しますか？")) { tasks = ["読書する", "歩く", "運動する", "勉強する", "仕事する", "ゲームする", "掃除する"]; updateListDisplay(); } }
 
     function setPresetTime(sec, btn) {
         selectedSeconds = sec;
