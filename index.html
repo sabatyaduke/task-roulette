@@ -46,7 +46,6 @@
 
         .container { width: 100%; max-width: 500px; text-align: center; position: relative; }
 
-        /* ヘッダーエリアの重なり防止策 */
         .header-area {
             display: flex;
             align-items: center;
@@ -61,7 +60,6 @@
             font-size: 1.8rem; letter-spacing: 5px; color: var(--sub); 
             text-shadow: 0 0 15px var(--sub); 
             margin: 0; text-transform: uppercase; transition: 0.4s;
-            /* アイコンと被らないよう左右にマージンを確保 */
             padding: 0 45px;
         }
         body.light-mode h1 { text-shadow: none; color: #005bb7; }
@@ -150,6 +148,10 @@
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; border-radius: 50%; transition: .4s; }
         input:checked + .slider { background-color: var(--timer-color); }
         input:checked + .slider:before { transform: translateX(22px); }
+
+        /* 追加項目：フッターのプライバシーリンク用スタイル */
+        .footer-links { margin-top: 40px; padding-bottom: 20px; font-size: 0.75rem; opacity: 0.5; }
+        .footer-links span { cursor: pointer; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -205,6 +207,10 @@
         <div id="task-list-display"></div>
         <button onclick="resetDefault()" style="margin-top:15px; background:none; border:none; color:#777; cursor:pointer; text-decoration:underline; font-size: 0.8rem; width:100%;">デフォルトに戻す</button>
     </div>
+
+    <div class="footer-links">
+        <span onclick="openModal('privacy-modal')">プライバシーポリシー</span>
+    </div>
 </div>
 
 <div id="settings-modal" class="modal-overlay" onclick="closeModal(event, 'settings-modal')">
@@ -244,6 +250,19 @@
         <h2 style="font-size: 2.5rem; color: var(--accent);">TIME UP!</h2>
         <div id="timeup-task-name" style="font-size:1.5rem; margin: 20px 0; font-weight:bold;"></div>
         <button onclick="stopAlarm()" style="background:var(--accent); color:white; border:none; padding:15px 30px; font-weight:bold; border-radius:50px; cursor:pointer; width:100%; font-size:1.2rem;">OK</button>
+    </div>
+</div>
+
+<div id="privacy-modal" class="modal-overlay" onclick="closeModal(event, 'privacy-modal')">
+    <div class="modal-content">
+        <h2>プライバシーポリシー</h2>
+        <div style="font-size: 0.8rem; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+            <p>当サイトでは、第三者配信による広告サービス「Google アドセンス」を利用しています。</p>
+            <p>広告配信事業者は、ユーザーの興味に応じた商品やサービスの広告を表示するため、当サイトや他サイトへのアクセスに関する情報 「Cookie」(氏名、住所、メール アドレス、電話番号は含まれません) を使用することがあります。</p>
+            <p>Cookieを無効にする設定およびGoogleアドセンスに関する詳細は「Google広告設定」をご覧ください。</p>
+            <p>また、本ツールの設定やタスクリストなどのデータは、ブラウザの「Local Storage」に保存されており、サーバーへ送信されることはありません。</p>
+        </div>
+        <button onclick="document.getElementById('privacy-modal').style.display='none'" style="width:100%; padding:12px; margin-top:20px; cursor:pointer; background:var(--border); border:none; color:var(--text); border-radius:8px; font-weight:bold;">閉じる</button>
     </div>
 </div>
 
@@ -293,7 +312,6 @@
     function openModal(id) { document.getElementById(id).style.display = 'flex'; renderHistory(); }
     function closeModal(e, id) { if(e.target.id === id) document.getElementById(id).style.display = 'none'; }
 
-    /* デフォルトから「給水する」を削除 */
     let tasks = JSON.parse(localStorage.getItem('myGachaTasks')) || ["読書する", "歩く", "運動する", "勉強する", "仕事する", "ゲームする", "掃除する"];
     function updateListDisplay() {
         document.getElementById('task-list-display').innerHTML = tasks.map((t, i) => `<div class="task-item"><span>${t}</span><span class="delete-btn" onclick="deleteTask(${i})">×</span></div>`).join('');
