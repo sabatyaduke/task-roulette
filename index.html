@@ -31,6 +31,11 @@
             --ctrl-active-bg: rgba(255, 255, 255, 0.25);
             --ctrl-active-text: #ffffff;
             --ctrl-active-border: #ffffff;
+            /* ダークモード用菱形パターン */
+            --bg-pattern: linear-gradient(45deg, #0a0a0a 25%, transparent 25%, transparent 75%, #0a0a0a 75%, #0a0a0a),
+                          linear-gradient(45deg, #0a0a0a 25%, transparent 25%, transparent 75%, #0a0a0a 75%, #0a0a0a);
+            --bg-size: 20px 20px;
+            --bg-pos: 0 0, 10px 10px;
         }
 
         /* 通常モード */
@@ -46,11 +51,16 @@
             --ctrl-active-bg: rgba(22, 163, 74, 0.15);
             --ctrl-active-text: var(--timer-color);  
             --ctrl-active-border: var(--timer-color);
+            /* ライトモードはパターンなし */
+            --bg-pattern: none;
         }
 
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
             background-color: var(--bg); color: var(--text);
+            background-image: var(--bg-pattern);
+            background-size: var(--bg-size);
+            background-position: var(--bg-pos);
             margin: 0; display: flex; justify-content: center;
             min-height: 100vh; padding: 20px; box-sizing: border-box;
             transition: background-color 0.4s ease, color 0.4s ease;
@@ -75,7 +85,7 @@
             margin: 0; text-transform: uppercase; transition: 0.4s;
             padding: 0 45px;
         }
-        body.light-mode h1 { text-shadow: none; color: #005bb7; }
+        body.light-mode h1 { text-shadow: none; } /* 色はスクリプトで制御するためcolor指定を削除 */
 
         .settings-btn {
             position: absolute; right: 0;
@@ -129,8 +139,9 @@
         }
 
         .list-manager { padding: 20px; text-align: left; margin-bottom: 20px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        .input-group input { flex-grow: 1; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; font-size: 16px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+        .input-group input[type="text"] { flex-grow: 1; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; font-size: 16px; }
+        .input-group input[type="color"] { width: 40px; height: 40px; border: none; background: transparent; cursor: pointer; padding: 0; }
         .add-btn { background: var(--sub); color: #fff; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .task-item { display: flex; justify-content: space-between; align-items: center; background: rgba(128,128,128,0.1); margin-bottom: 5px; padding: 8px 12px; border-radius: 5px; }
         .delete-btn { color: #ff4444; cursor: pointer; font-weight: bold; padding: 0 10px; }
@@ -213,6 +224,7 @@
     <div class="list-manager">
         <h2 style="font-size: 0.9rem; color: var(--sub); margin-top:0;">📋 行動リスト</h2>
         <div class="input-group">
+            <input type="color" id="new-task-color" value="#39ff14" title="このタスクのカラー">
             <input type="text" id="new-task" placeholder="追加する行動">
             <button class="add-btn" onclick="addTask()">追加</button>
         </div>
@@ -229,12 +241,20 @@
     <div class="modal-content">
         <h2>システム設定</h2>
         <div class="setting-row">
-            <label>ダークモード</label>
+            <label>テーマ変更</label>
             <select id="setting-theme" onchange="saveSettings()" style="background:var(--input-bg); color:var(--text); border:1px solid var(--sub); padding:5px; border-radius:5px;">
                 <option value="auto">自動</option>
                 <option value="dark">ダーク</option>
                 <option value="light">ライト</option>
             </select>
+        </div>
+        <div class="setting-row">
+            <label>全体カラー (ダーク時)</label>
+            <input type="color" id="setting-color-dark" value="#00f2ff" onchange="saveSettings()" style="background:none; border:none; cursor:pointer; width:35px; height:35px; padding:0;">
+        </div>
+        <div class="setting-row">
+            <label>全体カラー (ライト時)</label>
+            <input type="color" id="setting-color-light" value="#0077cc" onchange="saveSettings()" style="background:none; border:none; cursor:pointer; width:35px; height:35px; padding:0;">
         </div>
         <div class="setting-row">
             <label>⏱ 秒針音</label>
@@ -279,22 +299,43 @@
 </div>
 
 <script>
-    let selectedSeconds = 300, timerInterval = null, remainingTime = 0, currentTask = "Ready?";
+    let selectedSeconds = 300, timerInterval = null, remainingTime = 0;
+    let currentTaskObj = { name: "Ready?", color: "#39ff14" };
     let alarmIntervalId = null, isHistoryRecorded = false;
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // 既存の履歴リストをオブジェクト形式に互換性を持たせる処理
+    let tasks = JSON.parse(localStorage.getItem('myGachaTasks')) || [
+        {name: "読書する", color: "#39ff14"},
+        {name: "歩く", color: "#39ff14"},
+        {name: "運動する", color: "#ff4444"},
+        {name: "勉強する", color: "#4444ff"},
+        {name: "仕事する", color: "#39ff14"},
+        {name: "ゲームする", color: "#39ff14"},
+        {name: "掃除する", color: "#39ff14"}
+    ];
+    if (tasks.length > 0 && typeof tasks[0] === 'string') {
+        tasks = tasks.map(t => ({name: t, color: "#39ff14"}));
+        localStorage.setItem('myGachaTasks', JSON.stringify(tasks));
+    }
 
     function loadSettings() {
         const saved = JSON.parse(localStorage.getItem('arSettings')) || {};
         document.getElementById('setting-theme').value = saved.theme || 'auto';
+        document.getElementById('setting-color-dark').value = saved.colorDark || '#00f2ff';
+        document.getElementById('setting-color-light').value = saved.colorLight || '#0077cc';
         document.getElementById('tick-on').checked = saved.tickOn !== false;
         document.getElementById('tick-vol').value = saved.tickVol || '0.3';
         document.getElementById('alarm-on').checked = saved.alarmOn !== false;
         document.getElementById('alarm-vol').value = saved.alarmVol || '0.5';
         updateTheme();
     }
+    
     function saveSettings() {
         localStorage.setItem('arSettings', JSON.stringify({
             theme: document.getElementById('setting-theme').value,
+            colorDark: document.getElementById('setting-color-dark').value,
+            colorLight: document.getElementById('setting-color-light').value,
             tickOn: document.getElementById('tick-on').checked,
             tickVol: document.getElementById('tick-vol').value,
             alarmOn: document.getElementById('alarm-on').checked,
@@ -302,10 +343,20 @@
         }));
         updateTheme();
     }
+
     function updateTheme() {
         const mode = document.getElementById('setting-theme').value;
         const isNight = new Date().getHours() >= 21 || new Date().getHours() < 7;
-        document.body.classList.toggle('light-mode', mode === 'light' || (mode === 'auto' && !isNight));
+        const isLight = mode === 'light' || (mode === 'auto' && !isNight);
+        document.body.classList.toggle('light-mode', isLight);
+
+        // 全体カラーの適用（タイマー色には影響しない）
+        const customDark = document.getElementById('setting-color-dark').value;
+        const customLight = document.getElementById('setting-color-light').value;
+        const activeThemeColor = isLight ? customLight : customDark;
+
+        document.documentElement.style.setProperty('--sub', activeThemeColor);
+        document.documentElement.style.setProperty('--accent', activeThemeColor);
     }
 
     function playTone(freq, duration, type, soundType) {
@@ -324,17 +375,35 @@
     function openModal(id) { document.getElementById(id).style.display = 'flex'; renderHistory(); }
     function closeModal(e, id) { if(e.target.id === id) document.getElementById(id).style.display = 'none'; }
 
-    let tasks = JSON.parse(localStorage.getItem('myGachaTasks')) || ["読書する", "歩く", "運動する", "勉強する", "仕事する", "ゲームする", "掃除する"];
     function updateListDisplay() {
-        document.getElementById('task-list-display').innerHTML = tasks.map((t, i) => `<div class="task-item"><span>${t}</span><span class="delete-btn" onclick="deleteTask(${i})">×</span></div>`).join('');
+        document.getElementById('task-list-display').innerHTML = tasks.map((t, i) => 
+            `<div class="task-item">
+                <span style="border-left: 5px solid ${t.color}; padding-left: 10px; font-weight: bold;">${t.name}</span>
+                <span class="delete-btn" onclick="deleteTask(${i})">×</span>
+            </div>`
+        ).join('');
         localStorage.setItem('myGachaTasks', JSON.stringify(tasks));
     }
+    
     function addTask() {
         const val = document.getElementById('new-task').value.trim();
-        if (val) { tasks.push(val); document.getElementById('new-task').value = ''; updateListDisplay(); }
+        const col = document.getElementById('new-task-color').value;
+        if (val) { tasks.push({name: val, color: col}); document.getElementById('new-task').value = ''; updateListDisplay(); }
     }
+    
     function deleteTask(i) { tasks.splice(i, 1); updateListDisplay(); }
-    function resetDefault() { if(confirm("初期化しますか？")) { tasks = ["読書する", "歩く", "運動する", "勉強する", "仕事する", "ゲームする", "掃除する"]; updateListDisplay(); } }
+    
+    function resetDefault() { 
+        if(confirm("初期化しますか？")) { 
+            tasks = [
+                {name: "読書する", color: "#39ff14"}, {name: "歩く", color: "#39ff14"}, 
+                {name: "運動する", color: "#ff4444"}, {name: "勉強する", color: "#4444ff"}, 
+                {name: "仕事する", color: "#39ff14"}, {name: "ゲームする", color: "#39ff14"}, 
+                {name: "掃除する", color: "#39ff14"}
+            ]; 
+            updateListDisplay(); 
+        } 
+    }
 
     function setPresetTime(sec, btn) {
         selectedSeconds = sec;
@@ -344,6 +413,7 @@
         if(btn) btn.classList.add('active');
         resetTimer();
     }
+    
     function setCustomTime() {
         const h = parseInt(document.getElementById('custom-h').value) || 0;
         const m = parseInt(document.getElementById('custom-m').value) || 0;
@@ -356,11 +426,15 @@
         resetTimer(); isHistoryRecorded = false;
         let count = 0;
         const st = setInterval(() => {
-            document.getElementById('result-text').innerText = tasks[Math.floor(Math.random() * tasks.length)];
+            document.getElementById('result-text').innerText = tasks[Math.floor(Math.random() * tasks.length)].name;
             if (++count > 20) {
                 clearInterval(st);
-                currentTask = tasks[Math.floor(Math.random() * tasks.length)];
-                document.getElementById('result-text').innerHTML = `<span style="font-size:1rem; opacity:0.6;">START!</span><br>⭐ ${currentTask} ⭐`;
+                currentTaskObj = tasks[Math.floor(Math.random() * tasks.length)];
+                
+                // 選ばれたタスクのカラーをタイマーに適用
+                document.documentElement.style.setProperty('--timer-color', currentTaskObj.color);
+
+                document.getElementById('result-text').innerHTML = `<span style="font-size:1rem; opacity:0.6;">START!</span><br>⭐ ${currentTaskObj.name} ⭐`;
                 remainingTime = selectedSeconds; updateTimerDisplay();
                 document.getElementById('timer-section').style.display = 'block';
             }
@@ -369,10 +443,10 @@
 
     function startTimer() {
         if (timerInterval || remainingTime <= 0) return;
-        if (!isHistoryRecorded && currentTask !== "Ready?") {
+        if (!isHistoryRecorded && currentTaskObj.name !== "Ready?") {
             let h = JSON.parse(localStorage.getItem('arHistory')) || [];
             const label = document.getElementById('selected-time-display').innerText.replace("設定時間: ", "");
-            h.unshift({ date: new Date().toLocaleString(), task: currentTask, label: label, sec: selectedSeconds });
+            h.unshift({ date: new Date().toLocaleString(), task: currentTaskObj.name, color: currentTaskObj.color, label: label, sec: selectedSeconds });
             localStorage.setItem('arHistory', JSON.stringify(h.slice(0,30)));
             isHistoryRecorded = true;
         }
@@ -384,11 +458,13 @@
             if (remainingTime <= 0) { clearInterval(timerInterval); timerInterval = null; triggerTimeUp(); }
         }, 1000);
     }
+    
     function pauseTimer() { 
         clearInterval(timerInterval); timerInterval = null; 
         document.getElementById('btn-pause').classList.add('active-ctrl');
         document.getElementById('btn-start').classList.remove('active-ctrl');
     }
+    
     function resetTimer() { 
         pauseTimer(); remainingTime = selectedSeconds; updateTimerDisplay(); 
         document.getElementById('btn-start').classList.remove('active-ctrl');
@@ -403,25 +479,36 @@
     }
 
     function triggerTimeUp() {
-        document.getElementById('timeup-task-name').innerText = currentTask;
+        document.getElementById('timeup-task-name').innerText = currentTaskObj.name;
         document.getElementById('timeup-modal').style.display = 'flex';
         if (document.getElementById('alarm-on').checked) alarmIntervalId = setInterval(() => playTone(1200, 0.1, 'sine', 'alarm'), 400);
     }
+    
     function stopAlarm() { if(alarmIntervalId) clearInterval(alarmIntervalId); document.getElementById('timeup-modal').style.display = 'none'; }
 
     function renderHistory() {
         const h = JSON.parse(localStorage.getItem('arHistory')) || [];
         document.getElementById('history-list-display').innerHTML = h.map((x, i) => `
-            <div class="history-item" onclick="applyHistory('${(x.task||"").replace(/'/g,"\\'")}', ${x.sec})">
-                <div class="history-main"><span class="history-task">${x.task}</span><span style="font-size:0.75rem; opacity:0.6;">${x.label} (${x.date.split(' ')[0]})</span></div>
+            <div class="history-item" onclick="applyHistory('${(x.task||"").replace(/'/g,"\\'")}', ${x.sec}, '${x.color || "#39ff14"}')">
+                <div class="history-main">
+                    <span class="history-task" style="border-left: 3px solid ${x.color || "#39ff14"}; padding-left: 8px;">${x.task}</span>
+                    <span style="font-size:0.75rem; opacity:0.6; margin-left: 11px;">${x.label} (${x.date.split(' ')[0]})</span>
+                </div>
                 <div class="delete-history" onclick="deleteHistory(event, ${i})">×</div>
             </div>`).join('') || "履歴はありません";
     }
+    
     function deleteHistory(e, i) { e.stopPropagation(); let h = JSON.parse(localStorage.getItem('arHistory')); h.splice(i, 1); localStorage.setItem('arHistory', JSON.stringify(h)); renderHistory(); }
-    function applyHistory(task, sec) {
+    
+    function applyHistory(task, sec, color) {
         document.getElementById('settings-modal').style.display = 'none';
-        currentTask = task; selectedSeconds = sec; remainingTime = sec; isHistoryRecorded = true;
-        document.getElementById('result-text').innerHTML = `<span style="font-size:0.8rem; opacity:0.6;">履歴から復元</span><br>⭐ ${currentTask} ⭐`;
+        currentTaskObj = { name: task, color: color };
+        selectedSeconds = sec; remainingTime = sec; isHistoryRecorded = true;
+        
+        // 履歴復元時もタイマーの色を変更
+        document.documentElement.style.setProperty('--timer-color', currentTaskObj.color);
+
+        document.getElementById('result-text').innerHTML = `<span style="font-size:0.8rem; opacity:0.6;">履歴から復元</span><br>⭐ ${currentTaskObj.name} ⭐`;
         let label = sec < 60 ? sec+"秒" : (sec < 3600 ? (sec/60)+"分" : (sec/3600)+"時間");
         document.getElementById('selected-time-display').innerText = `設定時間: ${label}`;
         document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
