@@ -4,8 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Task Roulette</title>
+
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch(err => console.log('Service Worker Failed', err));
+        }
+    </script>
+
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5271787068763887"
      crossorigin="anonymous"></script>
+
     <style>
         :root {
             /* ナイトモード時（デフォルト） */
@@ -151,7 +162,6 @@
         input:checked + .slider { background-color: var(--timer-color); }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* 追加項目：フッターのプライバシーリンク用スタイル */
         .footer-links { margin-top: 40px; padding-bottom: 20px; font-size: 0.75rem; opacity: 0.5; }
         .footer-links span { cursor: pointer; text-decoration: underline; }
     </style>
@@ -422,4 +432,3 @@
 </script>
 </body>
 </html>
-
